@@ -1,0 +1,6 @@
+import {notFound,redirect} from "next/navigation";
+import {AppShell} from "@/components/shell";
+import {ServiceEditForm} from "@/components/service-edit-form";
+import {createSupabaseServerClient} from "@/lib/supabase/server";
+export const dynamic="force-dynamic";
+export default async function EditarServico({params}:{params:Promise<{id:string}>}){const{id}=await params;const sb=await createSupabaseServerClient();const{data:{user}}=await sb.auth.getUser();if(!user)redirect("/login");const[{data:service,error},{data:clients}]=await Promise.all([sb.from("services").select("id,status,client_id,address_id,quantity,scheduled_delivery_date,amount,notes,service_payments(amount)").eq("id",id).single(),sb.from("clients").select("id,name,client_addresses(id,address,number,city)").order("name")]);if(error){if(error.code==="PGRST116")notFound();throw new Error("Não foi possível carregar a OS.")}const received=(service.service_payments||[]).reduce((sum,p)=>sum+Number(p.amount),0);return <AppShell title="Serviços / Editar"><div className="heading"><div><h1>Editar serviço</h1><div className="sub">A capacidade projetada será recalculada ao salvar data ou quantidade.</div></div></div><ServiceEditForm service={service} clients={(clients||[]) as Parameters<typeof ServiceEditForm>[0]["clients"]} received={received}/></AppShell>}

@@ -1,0 +1,1 @@
+export function createReceiptPdf(receipt:Record<string,unknown>):Promise<Uint8Array>;

@@ -1,0 +1,16 @@
+"use client";
+import {useEffect,useState} from "react";
+import {useRouter} from "next/navigation";
+import {CheckCheck,ExternalLink} from "lucide-react";
+import {createSupabaseBrowserClient} from "@/lib/supabase/client";
+import {NotificationRow,notificationTone,notificationTypeLabel} from "@/components/notification-center";
+
+export function NotificationList(){
+ const[rows,setRows]=useState<NotificationRow[]>([]);const[loading,setLoading]=useState(true);const[error,setError]=useState("");const router=useRouter();
+ async function load(){const sb=createSupabaseBrowserClient();const{error:generateError}=await sb.rpc("generate_operational_notifications");if(generateError)console.error("[notificações] geração",generateError);const{data,error:queryError}=await sb.from("notifications").select("id,type,title,message,action_url,is_read,created_at").order("created_at",{ascending:false}).limit(100);if(queryError){console.error("[notificações] listagem",queryError);setError(queryError.message)}else setRows((data||[]) as NotificationRow[]);setLoading(false)}
+ useEffect(()=>{load()},[]);
+ async function mark(row:NotificationRow,openItem=false){if(!row.is_read){setRows(current=>current.map(item=>item.id===row.id?{...item,is_read:true}:item));const{error:updateError}=await createSupabaseBrowserClient().from("notifications").update({is_read:true,read_at:new Date().toISOString()}).eq("id",row.id);if(updateError){console.error("[notificações] marcar lida",updateError);setError(updateError.message)}}if(openItem&&row.action_url)router.push(row.action_url)}
+ async function markAll(){const now=new Date().toISOString();const{error:updateError}=await createSupabaseBrowserClient().from("notifications").update({is_read:true,read_at:now}).eq("is_read",false);if(updateError){console.error("[notificações] marcar todas",updateError);setError(updateError.message);return}setRows(current=>current.map(row=>({...row,is_read:true})))}
+ if(loading)return <div className="card emptyState">Carregando notificações...</div>;
+ return <>{error&&<div className="notice formError" role="alert">{error}</div>}<div className="notificationToolbar"><span>{rows.filter(row=>!row.is_read).length} não lida{rows.filter(row=>!row.is_read).length===1?"":"s"}</span><button className="btn secondary" onClick={markAll} disabled={!rows.some(row=>!row.is_read)}><CheckCheck size={16}/> Marcar todas como lidas</button></div>{rows.length===0?<div className="card emptyState">Nenhuma notificação encontrada.</div>:<div className="notificationCards">{rows.map(row=><article className={`card notificationCard ${notificationTone(row.type)} ${row.is_read?"read":"unread"}`} key={row.id}><span className="notificationDot"/><div className="notificationCardBody"><div className="notificationMeta"><span>{notificationTypeLabel(row.type)}</span><time>{new Date(row.created_at).toLocaleString("pt-BR")}</time></div><h2>{row.title}</h2><p>{row.message}</p><small>{row.is_read?"Lida":"Não lida"}</small></div><div className="notificationActions">{!row.is_read&&<button className="btn secondary" onClick={()=>mark(row)}>Marcar como lida</button>}{row.action_url&&<button className="btn" onClick={()=>mark(row,true)}><ExternalLink size={15}/> Abrir</button>}</div></article>)}</div>}</>;
+}
