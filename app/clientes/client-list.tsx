@@ -1,4 +1,12 @@
-﻿"use client";import {useState} from "react";import Link from "next/link";
-type ClientRow={id:string;name:string;document:string|null;phone:string;city:string|null;serviceCount:number;totalSpent:number;pendingAmount:number};
-const money=(n:number)=>n.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
-export function ClientList({clients}:{clients:ClientRow[]}){const[q,setQ]=useState("");const rows=clients.filter(c=>`${c.name} ${c.phone} ${c.document||""}`.toLowerCase().includes(q.trim().toLowerCase()));return <><div className="toolbar"><input className="search" aria-label="Buscar clientes" placeholder="Buscar por nome, telefone ou CPF/CNPJ" value={q} onChange={e=>setQ(e.target.value)}/></div>{rows.length===0?<div className="card emptyState">{clients.length===0?"Nenhum cliente cadastrado.":"Nenhum cliente encontrado para esta busca."}</div>:<div className="tableWrap"><table><thead><tr><th>Cliente</th><th>Telefone</th><th>Cidade</th><th>Serviços</th><th>Total gasto</th><th>Pendente</th><th></th></tr></thead><tbody>{rows.map(c=><tr key={c.id}><td><b>{c.name}</b><div className="sub">{c.document||"Sem documento"}</div></td><td>{c.phone}</td><td>{c.city||"—"}</td><td>{c.serviceCount}</td><td>{money(c.totalSpent)}</td><td>{money(c.pendingAmount)}</td><td><Link href={`/clientes/${c.id}`}>Ver detalhes →</Link></td></tr>)}</tbody></table></div>}</>}
+"use client";
+import {useState} from "react";
+import Link from "next/link";
+
+type ClientRow={id:string;name:string;document:string|null;phone:string;city:string|null;addressSearch:string;serviceCount:number;totalSpent:number;pendingAmount:number};
+const money=(value:number)=>value.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+const normalize=(value:string)=>value.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLocaleLowerCase("pt-BR").trim();
+
+export function ClientList({clients}:{clients:ClientRow[]}){
+ const[query,setQuery]=useState("");const normalizedQuery=normalize(query);const rows=clients.filter(client=>normalize(`${client.name} ${client.phone} ${client.document||""} ${client.addressSearch}`).includes(normalizedQuery));
+ return <><div className="toolbar"><input className="search" aria-label="Buscar clientes" placeholder="Buscar por nome, telefone, CPF/CNPJ ou endereço" value={query} onChange={event=>setQuery(event.target.value)}/></div>{rows.length===0?<div className="card emptyState">{clients.length===0?"Nenhum cliente cadastrado.":"Nenhum cliente encontrado para esta busca."}</div>:<div className="tableWrap"><table><thead><tr><th>Cliente</th><th>Telefone</th><th>Cidade</th><th>Serviços</th><th>Total gasto</th><th>Pendente</th><th></th></tr></thead><tbody>{rows.map(client=><tr key={client.id}><td><b>{client.name}</b><div className="sub">{client.document||"Sem documento"}</div></td><td>{client.phone}</td><td>{client.city||"—"}</td><td>{client.serviceCount}</td><td>{money(client.totalSpent)}</td><td>{money(client.pendingAmount)}</td><td><Link href={`/clientes/${client.id}`}>Ver detalhes →</Link></td></tr>)}</tbody></table></div>}</>;
+}

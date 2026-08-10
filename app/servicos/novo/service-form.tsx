@@ -50,6 +50,13 @@ export function NewServiceForm({clients:initialClients}:{clients:Client[]}){
    finalAddressId=address.id;
   }
   if(!finalAddressId){setError("Selecione ou cadastre um endereço para a obra.");setSaving(false);return}
+  const{data:openServices,error:openError}=await sb.from("services").select("id,service_number,quantity").eq("client_id",clientId).eq("address_id",finalAddressId).in("status",["scheduled","delivered","waiting_collection"]).order("created_at",{ascending:false}).limit(1);
+  if(openError){console.error("[servicos/novo] Busca de OS ativa",openError);setError(`Não foi possível verificar OS existentes: ${openError.message}`);setSaving(false);return}
+  const existing=openServices?.[0];
+  if(existing){
+   const addToExisting=window.confirm(`${existing.service_number} já está aberta para este cliente e endereço, com ${existing.quantity} caçamba(s).\n\nOK: adicionar à OS existente\nCancelar: criar nova OS mesmo assim`);
+   if(addToExisting){const{error:addError}=await sb.rpc("add_service_dumpsters",{service_id:existing.id,delivery_scheduled_at:new Date(`${delivery}T12:00:00-03:00`).toISOString(),additional_amount:Number(form.get("amount")),dumpster_notes:String(form.get("notes")||"").trim()||null,dumpster_count:quantity});if(addError){console.error("[servicos/novo] Adicionar à OS existente",addError);setError(addError.message);setSaving(false);return}router.push(`/servicos/${existing.id}`);router.refresh();return}
+  }
   const payload={company_id:result.profile.company_id,client_id:clientId,address_id:finalAddressId,quantity,scheduled_delivery_date:delivery,amount:Number(form.get("amount")),payment_method:String(form.get("payment_method")),payment_status:"pending",notes:String(form.get("notes")||"").trim()||null,status:"scheduled"};
   const{data,error:insertError}=await sb.from("services").insert(payload).select("id").single();
   if(insertError||!data){console.error("[servicos/novo] INSERT public.services",{error:insertError,payload});setError(insertError?.message||"Não foi possível criar o serviço.");setSaving(false);return}
