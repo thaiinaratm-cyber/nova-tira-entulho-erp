@@ -4,6 +4,7 @@ import {AppShell} from "@/components/shell";
 import {ViewServiceLink} from "@/components/view-actions";
 import {createSupabaseServerClient} from "@/lib/supabase/server";
 import {date,money,paymentLabels,todayInSaoPaulo,PaymentStatus} from "@/lib/erp";
+import {calculateDumpsterTiming,dumpsterDayKey} from "@/lib/dumpster-deadline";
 
 type Params={view?:string;date?:string;month?:string;q?:string};
 type Dumpster={id:string;delivery_scheduled_at:string;delivered_at:string|null;deadline_at:string|null;collected_at:string|null;status:string};
@@ -14,7 +15,7 @@ const dayKey=(value:Date|string)=>new Intl.DateTimeFormat("en-CA",{timeZone:zone
 const addDays=(key:string,n:number)=>{const d=new Date(`${key}T12:00:00-03:00`);d.setDate(d.getDate()+n);return dayKey(d)};
 const address=(s:Service)=>s.client_addresses?`${s.client_addresses.address}${s.client_addresses.number?`, ${s.client_addresses.number}`:""} · ${s.client_addresses.city}/${s.client_addresses.state}`:"—";
 const deliveryKey=(row:EventRow)=>dayKey(row.dumpster.delivery_scheduled_at);
-const deadlineKey=(row:EventRow)=>row.dumpster.deadline_at?dayKey(row.dumpster.deadline_at):null;
+const deadlineKey=(row:EventRow)=>dumpsterDayKey(calculateDumpsterTiming(row.dumpster).deadlineAt);
 
 function OperationList({title,rows,kind}:{title:string;rows:EventRow[];kind:"delivery"|"collection"}){return <section className="agendaSection"><div className="sectionTitle"><h2>{title}</h2><span className="agendaCount">{rows.length}</span></div>{rows.length===0?<div className="card emptyAgenda">Nenhuma operação.</div>:<div className="agendaList">{rows.map(row=><article className={`card agendaItem ${row.dumpster.deadline_at&&new Date(row.dumpster.deadline_at)<new Date()?"overdue":""}`} key={`${kind}-${row.dumpster.id}`}><div className="agendaItemMain"><div className="agendaOs"><strong>{row.service.service_number} / Caçamba {row.number}</strong><span className={`status ${row.dumpster.status}`}>{row.dumpster.status==="scheduled"?"Agendada":row.dumpster.status==="delivered"?"Entregue":"Aguardando retirada"}</span></div><h3>{row.service.clients?.name||"Cliente"}</h3><p>{row.service.clients?.phone||"Sem telefone"} · {address(row.service)}</p><div className="agendaFacts"><span>{kind==="delivery"?`Entrega: ${date(deliveryKey(row))}`:`Retirada: ${date(deadlineKey(row))}`}</span><span>{money(row.service.amount)}</span><span className={`status ${row.service.payment_status}`}>{paymentLabels[row.service.payment_status]}</span></div></div><div className="agendaActions"><ViewServiceLink id={row.service.id}/></div></article>)}</div>}</section>}
 
