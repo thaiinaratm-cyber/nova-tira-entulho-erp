@@ -1,0 +1,4 @@
+const LOCAL_SUPABASE_HOSTS=new Set(["127.0.0.1","localhost","host.docker.internal"]);
+export function isLocalSupabaseUrl(value:string){try{return LOCAL_SUPABASE_HOSTS.has(new URL(value).hostname)}catch{return false}}
+export function getSupabasePublicConfig(){const url=process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();const key=(process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY||process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)?.trim();if(!url||!key)throw new Error("Configure NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY.");if(process.env.NODE_ENV==="development"&&!isLocalSupabaseUrl(url))throw new Error("Ambiente local está apontando para o Supabase de produção. Corrija o .env.local.");return{url,key}}
+export function getSupabaseServiceRoleKey(){const key=process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();if(!key)throw new Error("SUPABASE_SERVICE_ROLE_KEY não configurada no servidor.");return key}

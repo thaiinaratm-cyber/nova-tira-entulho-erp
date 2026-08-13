@@ -14,4 +14,4 @@ ERP para locação de caçambas, com Next.js, TypeScript, Tailwind CSS e Supabas
 Sem variáveis configuradas a interface funciona em modo de demonstração, sem persistência.
 
 ## Configurações da empresa
-Para bancos criados antes desta personalização, execute `supabase/migrations/20260807_company_profile.sql`. Os dados são lidos da tabela `companies`; funcionários têm leitura e apenas administradores podem atualizar.
+Para bancos criados antes desta personalização, execute `supabase/migrations/20260807000200_company_profile.sql`. Os dados são lidos da tabela `companies`; funcionários têm leitura e apenas administradores podem atualizar.

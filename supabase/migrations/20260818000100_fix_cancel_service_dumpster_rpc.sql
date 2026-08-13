@@ -32,7 +32,12 @@ grant select on public.service_dumpster_events to authenticated;
 
 -- Assinatura que o PostgREST deve publicar:
 -- public.cancel_service_dumpster(dumpster_id uuid, cancellation_reason text)
-create or replace function public.cancel_service_dumpster(
+-- The previous version has DEFAULT NULL on cancellation_reason. PostgreSQL
+-- cannot remove that default with CREATE OR REPLACE, so only this exact
+-- signature is dropped before it is recreated with a required parameter.
+drop function if exists public.cancel_service_dumpster(uuid,text);
+
+create function public.cancel_service_dumpster(
   dumpster_id uuid,
   cancellation_reason text
 )
